@@ -27,12 +27,16 @@ output_mnist1 = tf.placeholder(tf.float32, shape=[None, 10])
 
 input_mnist2 = tf.placeholder(tf.float32, shape=[None, 784])
 output_mnist2 = tf.placeholder(tf.float32, shape=[None, 10])
+
+input_mnist3 = tf.placeholder(tf.float32, shape=[None, 784])
+output_mnist3 = tf.placeholder(tf.float32, shape=[None, 10])
+
 model_loss1=[]
 model_loss2=[]
 epochs = 100
 model_acc1=[]
 model_acc2=[]
-train_iter = 1
+train_iter = 8
 weights = []
 optimize=[]
 
@@ -218,15 +222,70 @@ class deep_model2():
     
     return model_loss2,train_acc, saver,p_label
 
+class deep_model3():
+  def parameters(self):
+    total_parameters = 0
+    for variable in tf.trainable_variables():
+      # shape is an array of tf.Dimension
+      print(variable)
+      shape = variable.get_shape()
+      print(shape)
+      #print(len(shape))
+      variable_parameters = 1
+      for dim in shape:
+        #print(dim)
+        variable_parameters *= dim.value
+      print(variable_parameters)
+      total_parameters += variable_parameters
+    print(total_parameters)
+    return True
+
+  def model3(self):
+    train_acc = []
+    p_label = []
+    model3_h1 = tf.layers.dense(inputs= input_mnist3, units=128, activation=tf.nn.tanh, name='model3_h1', reuse=None)# hidden layer
+    model3_h2 = tf.layers.dense(inputs= model3_h1, units=64, activation=tf.nn.tanh, name='model3_h2', reuse=None)    # hidden layer
+    model3_output = tf.layers.dense(inputs=model3_h2, units=10, name='model3_output', reuse=None)                       # output layer
+    self.parameters()
+    loss = tf.losses.mean_squared_error(output_mnist3, model3_output)
+    optimizer = tf.train.GradientDescentOptimizer(learning_rate = 0.05)
+    train_op = optimizer.minimize(loss)
+    sess3 = tf.Session()
+    sess3.run(tf.global_variables_initializer())
+    sess3.run(tf.local_variables_initializer())
+
+    for epoch in range (3500):
+      #train and net output
+      inputs, labels = mnist_data.train.next_batch(5)
+      feeds = {input_mnist3: mnist_train_images, output_mnist3: mnist_train_labels}
+      op,l,pred = sess3.run([train_op,loss,model3_output], feed_dict=feeds)
+      pred = tf.equal(tf.argmax(model3_output, 1), tf.argmax(output_mnist3, 1))
+      accuracy = tf.reduce_mean(tf.cast(pred, tf.float32))
+      p_label.append(tf.cast(pred, tf.float32))
+      print("Opt: ", op)
+      #printing batch accuracy after every 100 epochs
+      if epoch%10 == 0:
+        model_loss3.append(l)
+        optimize.append(op)
+        train_accuracy = accuracy.eval(session=sess2, feed_dict=feeds)
+        print("Step %d, training batch accuracy %g"%(epoch, train_accuracy))
+        train_acc.append(train_accuracy)
+        #gradient = gradient_calc() #tf.estimator.EstimatorSpec(mode = tf.estimator.ModeKeys.TRAIN,loss=loss, train_op=train_op)
+    print("Test accuracy: %g"%accuracy.eval(session=sess2, feed_dict={input_mnist2: mnist_test_images, output_mnist2: mnist_test_labels}))
+    saver = tf.train.Saver()
+    saver.save(sess3, "/content/gdrive/My Drive/model2.ckpt")
+    return model_loss3,train_acc, saver,p_label
+
 def main():
   
   dp1 = deep_model1()
   dp2 = deep_model2()
-
+  dp3 = deep_model3()
   #training the model for 8 times
   for iter in range (train_iter):
     loss_value_1, train_acc1, saved_sess1, pred1 = dp1.model1()
     loss_value_2, train_acc2, saved_sess2, pred2 = dp2.model2()
+    loss_value_3, train_acc3, saved_sess3, pred3 = dp3.model3()
     if iter%3 == 0:
       print("Saving the session successfully")#all the weights are stored
       model1_weights_h1 = tf.get_collection(key = tf.GraphKeys.TRAINABLE_VARIABLES, scope = 'model1_h1/kernel:0')
@@ -237,12 +296,14 @@ def main():
       model2_weights_output = tf.get_collection(key = tf.GraphKeys.TRAINABLE_VARIABLES, scope = 'model2_output/kernel:0')
       #get the weights from the sessions
   loss_plotting(loss_value_1,loss_value_2)
+  loss_plotting(loss_value_1,loss_value_3)
   accuracy_plotting(train_acc1,train_acc2)
-  
+  accuracy_plotting(train_acc1,train_acc3)
   training_plotting()
   prediction_plotting(pred1)
   #For Prediction plot of model2
   prediction_plotting(pred2)
+  prediction_plotting(pred3) 
   loss_value_2 = dp2.model2()
 
 if __name__ =="__main__":
