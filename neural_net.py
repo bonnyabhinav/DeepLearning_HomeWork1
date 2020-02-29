@@ -238,13 +238,12 @@ def main():
       #get the weights from the sessions
   loss_plotting(loss_value_1,loss_value_2)
   accuracy_plotting(train_acc1,train_acc2)
-  #For prediction plot of model1
-  #training_plotting()
-  #prediction_plotting(pred1)
+  
+  training_plotting()
+  prediction_plotting(pred1)
   #For Prediction plot of model2
-  #prediction_plotting(pred2)
-  #loss_value_2 = dp2.model2()
-  #loss_plotting(loss_value_1, loss_value_2)
+  prediction_plotting(pred2)
+  loss_value_2 = dp2.model2()
 
 if __name__ =="__main__":
   main()
