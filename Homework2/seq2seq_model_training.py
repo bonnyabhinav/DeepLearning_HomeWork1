@@ -126,6 +126,7 @@ def training_model(word_size, max_length, feature_length):
   decoder_output_size = max_length
   encoder_hidden_units = 20
   decoder_hidden_units = 20
+  rnn_size = 64
 
   encoder_inputs = tf.placeholder(shape=(None, None), dtype=tf.int32, name='encoder_inputs')
   encoder_inputs_length = tf.placeholder(shape=(None,), dtype=tf.int32, name='encoder_inputs_length')
@@ -147,14 +148,14 @@ def training_model(word_size, max_length, feature_length):
   decoder_lengths = encoder_inputs_length + 3
 
   attention_mechanism = tf.contrib.seq2seq.LuongAttention(
-                units=self.rnn_size, 
+                rnn_size, 
                 memory=encoder_outputs,
                 memory_sequence_length=encoder_inputs_length)
   
   decoder_cell = tf.contrib.seq2seq.AttentionWrapper(
                 cell=decoder_cell, 
                 attention_mechanism=attention_mechanism, 
-                attention_layer_size=self.rnn_size, 
+                attention_layer_size=rnn_size, 
                 name='Attention_Wrapper')
 
   #weights
@@ -162,14 +163,11 @@ def training_model(word_size, max_length, feature_length):
   #bias
   b = tf.Variable(tf.zeros([vocab_size]), dtype=tf.float32)
 
-
-  assert EOS == 1 and PAD == 0
-
   eos_time = tf.ones([batch_size], dtype=tf.int32, name='EOS')
   pad_time = tf.zeros([batch_size], dtype=tf.int32, name='PAD')
 
   #retrieves rows of the params tensor. The behavior is similar to using indexing with arrays in numpy
-  embeddings = tf.Variable(tf.random_uniform([vocab_size, decoder_intput_size], -1.0, 1.0), dtype=tf.float32)
+  embeddings = tf.Variable(tf.random_uniform([vocab_size, decoder_output_size], -1.0, 1.0), dtype=tf.float32)
   decoder_inputs_embedded = tf.nn.embedding_lookup(embeddings, encoder_outputs)
 
   decoder_outputs, decoder_final_state = (tf.nn.dynamic_rnn(cell=decoder_cell,
